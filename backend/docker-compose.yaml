@@ -11,6 +11,7 @@ services:
       - app-network
     env_file:
       - .env
+      - stack.env
   portrait-mqtt-tasker:
     build:
       context: .
@@ -18,6 +19,7 @@ services:
     container_name: portrait-mqtt-tasker
     env_file:
       - .env
+      - stack.env
     # restart: always
 
 networks:
