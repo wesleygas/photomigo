@@ -1,0 +1,23 @@
+FROM python:3.10-slim
+
+# Set the working directory
+WORKDIR /
+COPY api_requirements.txt .
+RUN pip install --no-cache-dir -r api_requirements.txt
+
+# Copy the requirements file
+COPY app/ app
+# copy .env .
+
+# Install dependencies
+
+# Copy the FastAPI application code
+
+# Expose the port the app runs on
+# EXPOSE 8000
+
+# Command to run the FastAPI server
+RUN dir -s  
+RUN ls
+RUN ls /app
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,2 @@
+https://github.com/SpotlightKid/mrequests/
+https://github.com/george-hawkins/micropython-wifi-setup/tree/master

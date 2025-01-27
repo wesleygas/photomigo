@@ -1,0 +1,5 @@
+.venv
+__pycache__
+backend/.env copy
+esp_root_mirror/credentials
+esp_root_mirror/mqtt copy.json

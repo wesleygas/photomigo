@@ -1,0 +1,5 @@
+paho-mqtt
+pydantic_settings
+sqlmodel
+psycopg[binary,pool]
+requests

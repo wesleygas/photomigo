@@ -1,0 +1,14 @@
+FROM python:3.10-slim
+
+# Set the working directory
+WORKDIR /
+COPY tasker_requirements.txt .
+RUN pip install --no-cache-dir -r tasker_requirements.txt
+
+# Copy the requirements file
+COPY app/ app
+# COPY .env .
+COPY tasker/ tasker
+ENV PYTHONPATH="${PYTHONPATH}:/"
+# Command to run the FastAPI server
+CMD ["python", "tasker/mqtt_tasker.py"]

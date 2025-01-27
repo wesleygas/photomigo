@@ -1,0 +1,7 @@
+fastapi[standard]
+pillow
+requests
+qrcode
+pydantic_settings
+sqlmodel
+psycopg[binary,pool]
