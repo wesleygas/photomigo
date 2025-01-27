@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: ./app/DockerFile
     ports:
-      - "8000:8000"
+      - "5718:8000"
     container_name: portrait-api
     # network_mode: "host"
     networks:
