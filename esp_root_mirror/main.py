@@ -35,8 +35,8 @@ def sub_cb(topic, msg):
         login_info = json.loads(msg)
 
 with open("mqtt.json", 'rb') as f:
-    mc = json.read(f)    
-    mqtt = MQTTClient(portraitname, mc['broker'], port=mc['port'], user=mc['user'], password=mc['sensorsiot'])
+    mc = json.load(f)    
+    mqtt = MQTTClient(portraitname, mc['broker'], port=mc['port'], user=mc['user'], password=mc['password'])
 
 mqtt.set_callback(sub_cb)
 
