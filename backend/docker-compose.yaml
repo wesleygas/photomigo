@@ -3,24 +3,22 @@ services:
     build:
       context: .
       dockerfile: ./app/DockerFile
+    image: wesleygas/portrait-api
     ports:
       - "5718:8000"
     container_name: portrait-api
-    # network_mode: "host"
     networks:
       - app-network
     env_file:
       - .env
-      - stack.env
   portrait-mqtt-tasker:
     build:
       context: .
       dockerfile: ./tasker/DockerFile
+    image: wesleygas/portrait-mqtt-tasker
     container_name: portrait-mqtt-tasker
     env_file:
       - .env
-      - stack.env
-    # restart: always
 
 networks:
   app-network:

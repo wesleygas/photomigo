@@ -61,8 +61,7 @@ def build_qr_url(url):
 @router.get("/image")
 async def get_image(
         session: SessionDep, 
-        machine: Annotated[str, Header()],
-        advance: bool = False
+        machine: Annotated[str, Header()]
     ):
     try:
         # Fetch the image from the provided URL
@@ -72,7 +71,6 @@ async def get_image(
         if response.status_code != 200:
             raise HTTPException(status_code=404, detail="Error finding image ID")
         album_assets = response.json()['assets']
-        grp.current_asset = (grp.current_asset + 1)%len(album_assets) if advance else grp.current_asset
         image_id = album_assets[grp.current_asset]['id']
         image_url = f'{settings.IMMICH_API_PATH}/assets/{image_id}/thumbnail?size=preview'
         session.add(grp)
