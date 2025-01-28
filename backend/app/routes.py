@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi.responses import Response
 from io import BytesIO
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageOps
 import requests
 import qrcode
 from collections.abc import Generator
@@ -33,12 +33,18 @@ def fetch_image_from_immich(image_url):
     image = Image.open(response.raw).convert("RGB")
     image.thumbnail((320, 240))
     image = image.rotate(180)
+    image = ImageOps.mirror(image)
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(1.2)  # Increase contrast by 20%
     enhancer = ImageEnhance.Brightness(image)
     image = enhancer.enhance(0.8)  # Increase brightness by 10%
+    new_image = Image.new("RGB", (320, 240), color="black")
+    # Paste the resized image onto the center of the black image
+    x_offset = (320 - image.width) // 2
+    y_offset = (240 - image.height) // 2
+    new_image.paste(image, (x_offset, y_offset))
     byte_io = BytesIO()
-    image.save(byte_io, format="BMP")
+    new_image.save(byte_io, format="BMP")
     byte_io.seek(0)
     return byte_io
 
