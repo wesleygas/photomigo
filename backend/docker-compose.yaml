@@ -1,25 +1,39 @@
 services:
   portrait-api:
-    build:
-      context: .
-      dockerfile: ./app/DockerFile
     image: wesleygas/portrait-api
     ports:
       - "5718:8000"
     container_name: portrait-api
-    networks:
-      - app-network
     env_file:
       - .env
+    restart: unless-stopped
+    depends_on:
+      - postgresdb
   portrait-mqtt-tasker:
-    build:
-      context: .
-      dockerfile: ./tasker/DockerFile
     image: wesleygas/portrait-mqtt-tasker
     container_name: portrait-mqtt-tasker
     env_file:
       - .env
-
-networks:
-  app-network:
-    driver: bridge
+    restart: unless-stopped
+    depends_on:
+      - postgresdb
+  mosquitto:
+    image: eclipse-mosquitto
+    hostname: migomqtt
+    container_name: migomqtt
+    restart: unless-stopped
+    ports:
+      - "7148:1883"
+      - "5720:9001"
+    volumes:
+      - ./mosquitto:/etc/mosquitto
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+  postgresdb:
+    hostname: postgresdb
+    image: postgres:latest
+    ports:
+      - 5433:${POSTGRES_PORT}
+    env_file:
+      - .env
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
