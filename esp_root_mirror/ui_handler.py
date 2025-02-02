@@ -159,6 +159,7 @@ class UI_handler():
         ws = WiFiSetup(self.machine_name)
         draw_centered_text(self.display, "Configurando Wi-Fi")
         if not ws.connect():
+            self.display.clear(hlines=16)
             draw_centered_text(self.display, f"conecte-se na rede", offset_y=-16)
             draw_centered_text(self.display, self.machine_name)
             draw_centered_text(self.display, "para configurar o wifi", offset_y=16)
