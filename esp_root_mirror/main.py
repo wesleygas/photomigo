@@ -11,7 +11,7 @@ import json
 group_id = -1
 login_info = None
 is_logged_in = False
-portraitname = f"retrato_{machine.unique_id().hex()[:6]}"
+portraitname = f"retrato_{machine.unique_id().hex()[:10]}"
 ui = ui_handler.UI_handler(machine_name=portraitname)
 
 wlan = network.WLAN(network.STA_IF)

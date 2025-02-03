@@ -8,6 +8,8 @@ import requests
 import qrcode
 from collections.abc import Generator
 from sqlmodel import Session, select
+import random
+import datetime
 
 from app.models import Device, Group
 from app.config import settings
@@ -64,6 +66,12 @@ def build_qr_url(url):
     return byte_io
 
 
+def translate_asset_id(asset_index, seed, asset_count):
+    shuffle_order = list(range(asset_count))
+    random.Random(seed).shuffle(shuffle_order)
+    return shuffle_order[asset_index]
+
+
 @router.get("/image")
 async def get_image(
         session: SessionDep, 
@@ -73,12 +81,16 @@ async def get_image(
         # Fetch the image from the provided URL
         # print(machine)
         grp = get_group_by_machine(session, machine)
+        device = session.get(Device, machine)
+        device.last_request = datetime.datetime.now()
         response = requests.get(f"{settings.IMMICH_API_PATH}/albums/{grp.album_id}", stream=True, headers={"x-api-key": settings.IMMICH_API_KEY})
         if response.status_code != 200:
             raise HTTPException(status_code=404, detail="Error finding image ID")
         album_assets = response.json()['assets']
-        image_id = album_assets[grp.current_asset]['id']
+        asset_position = translate_asset_id(grp.current_asset, grp.random_seed, len(album_assets))
+        image_id = album_assets[asset_position]['id']
         image_url = f'{settings.IMMICH_API_PATH}/assets/{image_id}/thumbnail?size=preview'
+        session.add(device)
         session.add(grp)
         session.commit()
         return Response(content=fetch_image_from_immich(image_url).getvalue(), media_type="image/bmp")

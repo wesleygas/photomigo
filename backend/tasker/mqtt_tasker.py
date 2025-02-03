@@ -1,5 +1,5 @@
 from app.db import engine
-from app.models import Device, Group
+from app.models import Device, Group, LoginRequest
 from app.config import settings
 from sqlmodel import Session, select
 import paho.mqtt.client as mqtt
@@ -7,6 +7,8 @@ import datetime
 import time
 import requests
 import json 
+import random
+from typing import List
 
 import logging
 logging.basicConfig()
@@ -67,31 +69,42 @@ def sub_to_machines(session: Session):
 def trigger_group_renew(group_id):
     mqttc.publish(f"portrait/group/{group_id}", "RENEW", qos=1)
 
-def get_next_asset_id(album_id, current_asset):
+
+def set_next_asset_id(group: Group):
     try:
-        response = requests.get(f"{settings.IMMICH_API_PATH}/albums/{album_id}?withoutAssets=true", stream=True, headers={"x-api-key": settings.IMMICH_API_KEY})
+        response = requests.get(f"{settings.IMMICH_API_PATH}/albums/{group.album_id}?withoutAssets=true", stream=True, headers={"x-api-key": settings.IMMICH_API_KEY})
         assetcount = response.json()['assetCount']
-        return (current_asset+1)%assetcount
+        group.current_asset = (group.current_asset+1)%assetcount
+        if(group.current_asset == 0):
+            group.random_seed = random.randint(0,1000)
+        return group
     except Exception as e:
         print(e)
-        return 0
+        return group
 
-def send_rollover_command(session: Session, group: Group):
-    group.last_rollover = datetime.datetime.now()
-    group.current_asset = get_next_asset_id(group.album_id, group.current_asset)
-    trigger_group_renew(group.id)
-    return group
+
+def skip_photos_from_groups(session: Session, groups: List[Group]):
+    groups_to_skip = []
+    for group in groups:
+        groups_to_skip.append(group.id)
+        group.last_rollover = datetime.datetime.now()
+        group = set_next_asset_id(group)
+        session.add(group)
+    session.commit()
+    for group_id in groups_to_skip:
+        trigger_group_renew(group_id)
 
 
 # a cada 30 segundos, checa se passou o tempo necessário para atualizar as imagens
 def timeout_check(session: Session):
     groups = session.exec(select(Group)).all()
     now = datetime.datetime.now()
+    groups_to_renew = []
     for group in groups:
-        if(now - group.last_rollover > datetime.timedelta(minutes=2)):
-            send_rollover_command(session, group)
-            session.add(group)
-    session.commit()
+        if(now - group.last_rollover > datetime.timedelta(minutes=group.rollover_delay_minutes)):
+            groups_to_renew.append(group)
+    skip_photos_from_groups(session, groups_to_renew)
+    
 
 def handle_login_requests(session: Session):
     global login_requests
@@ -101,8 +114,9 @@ def handle_login_requests(session: Session):
     devices = session.exec(select(Device).where(Device.id.in_(device_ids)))
     login_requests = {}
     for device in devices:
+        session.add(LoginRequest(device_id=device.id, request_timestamp=datetime.datetime.now()))
         mqttc.publish(f"portrait/login/{device.id}", json.dumps({"groupid": device.group_id, "api_url": settings.API_URL}))
-
+    session.commit()
 
 def switch_photo_check(session: Session):
     global switch_photo_requests
@@ -112,12 +126,13 @@ def switch_photo_check(session: Session):
     now = datetime.datetime.now()
     groups = session.exec(select(Group).where(Group.id.in_(group_ids)))
     switch_photo_requests = {}
+    groups_to_skip = []
     for group in groups:
-        if(now - group.last_skip_request > datetime.timedelta(seconds=5)):
+        if now - group.last_skip_request > datetime.timedelta(seconds=5):
             group.last_skip_request = now
-            group = send_rollover_command(session, group)
-            session.add(group)
-    session.commit()
+            groups_to_skip.append(group)
+    skip_photos_from_groups(session, groups_to_skip)
+    
 
 
 def main(session: Session):
